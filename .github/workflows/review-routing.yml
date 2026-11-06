@@ -1,7 +1,9 @@
 name: review-routing
 
+# Runs on pull_request_target so PRs from forks get a writable token.
+# This job never checks out or runs PR code. It only reads through the API.
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
@@ -13,39 +15,34 @@ jobs:
   review-routing:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          fetch-depth: 0
       - name: Route for review
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BASE: ${{ github.event.pull_request.base.sha }}
-          HEAD: ${{ github.event.pull_request.head.sha }}
-          PR_BODY: ${{ github.event.pull_request.body }}
+          REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           REVIEW_LABEL="needs-maintainer-review"
           REVIEW_NOTE="Thanks. A maintainer will review this before merge."
 
-          changed=$(git diff --name-only "$BASE" "$HEAD" -- || true)
-          code=$(printf '%s\n' "$changed" | grep -E '(\.go$|^ui/|^locales/)' || true)
+          files=$(gh api "repos/$REPO/pulls/$PR_NUMBER/files" --paginate --jq '.[].filename' || true)
+          code=$(printf '%s\n' "$files" | grep -E '(\.go$|^ui/|^locales/)' || true)
           if [ -z "$code" ]; then
             echo "No code paths changed. Done."
             exit 0
           fi
 
           route=""
-          for sha in $(git rev-list "$BASE..$HEAD"); do
-            msg=$(git log --format=%B -n 1 "$sha")
-            people=$(git log --format='%an %ae %cn %ce' -n 1 "$sha")
-            if printf '%s\n' "$msg" | grep -qiE '^(co-authored-by|generated-by|assisted-by):.*(noreply@anthropic\.com|claude|chatgpt|openai|copilot|copilot-swe-agent|cursor|cursoragent|codeium|windsurf|gemini|aider|devin|devin-ai-integration|sweep|coderabbit)'; then
-              route="yes"
-            fi
-            if printf '%s\n' "$people" | grep -qE '\[bot\]' && ! printf '%s\n' "$people" | grep -q 'dependabot\[bot\]'; then
-              route="yes"
-            fi
-          done
+          commits=$(gh api "repos/$REPO/pulls/$PR_NUMBER/commits" --paginate --jq '.' || echo '[]')
+
+          if printf '%s\n' "$commits" | jq -r '.[].commit.message' 2>/dev/null | grep -qiE '^(co-authored-by|generated-by|assisted-by):.*(noreply@anthropic\.com|claude|chatgpt|openai|copilot|copilot-swe-agent|cursor|cursoragent|codeium|windsurf|gemini|aider|devin|devin-ai-integration|sweep|coderabbit)'; then
+            route="yes"
+          fi
+
+          bots=$(printf '%s\n' "$commits" | jq -r '.[] | [.author.login, .committer.login] | .[] | select(. != null)' 2>/dev/null | grep -E '\[bot\]' | grep -v 'dependabot\[bot\]' || true)
+          if [ -n "$bots" ]; then
+            route="yes"
+          fi
 
           if ! printf '%s\n' "${PR_BODY:-}" | grep -qiE '^\s*-\s*\[[xX]\].*my own work'; then
             route="yes"
@@ -56,8 +53,9 @@ jobs:
             exit 0
           fi
 
-          gh pr edit "$PR_NUMBER" --add-label "$REVIEW_LABEL"
-          if ! gh pr view "$PR_NUMBER" --json comments --jq '.comments[].body' | grep -qFx "$REVIEW_NOTE"; then
-            gh pr comment "$PR_NUMBER" --body "$REVIEW_NOTE"
+          gh pr edit "$PR_NUMBER" --repo "$REPO" --add-label "$REVIEW_LABEL" || true
+          if ! gh pr view "$PR_NUMBER" --repo "$REPO" --json comments --jq '.comments[].body' 2>/dev/null | grep -qFx "$REVIEW_NOTE"; then
+            gh pr comment "$PR_NUMBER" --repo "$REPO" --body "$REVIEW_NOTE" || true
           fi
           echo "Sent for maintainer review."
+          exit 0

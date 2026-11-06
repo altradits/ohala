@@ -18,11 +18,23 @@ Ohala is a self-hosted till (point of sale) in Go. It runs next to the owner's o
 * Not multi-merchant. One instance serves one node owner.
 * Not an exchange. No mobile money, no buying, no conversion.
 
-Altradits runs one instance at till.altradits.com for its own sales. It does not take payments for other shops.
+Altradits will run one instance for its own sales. It will not take payments for other shops.
 
 ## Who it is for
 
 Shops, stalls, cafes, meetups and donation desks that run an LND node. Ohala is built for the world-wide Bitcoin community.
+
+## Tech stack
+
+* Go, the same language as LND.
+* LND over gRPC (`lnrpc`, `invoicesrpc`) with an invoice-only macaroon.
+* bbolt for local storage, in one file.
+* Plain HTML rendered by the same binary, with one small JavaScript file. No frameworks, no build step, works on low-end phones.
+* LNURL-pay and Lightning addresses served by Ohala itself.
+* Translations in plain JSON files, one per language.
+* Local development on regtest with Polar.
+
+The design is in [docs/architecture.md](docs/architecture.md), the LND setup in [docs/lnd.md](docs/lnd.md), and the security model in [docs/security.md](docs/security.md).
 
 ## Requirements
 

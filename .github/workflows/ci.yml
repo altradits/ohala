@@ -1,0 +1,53 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: fmt, vet, test, i18n, vuln
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Look for Go code
+        id: go
+        run: |
+          if [ -f go.mod ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No go.mod yet. Skipping Go checks."
+          fi
+      - name: Set up Go
+        if: steps.go.outputs.present == 'true'
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: gofmt
+        if: steps.go.outputs.present == 'true'
+        run: test -z "$(gofmt -l .)"
+      - name: go vet
+        if: steps.go.outputs.present == 'true'
+        run: go vet ./...
+      - name: go test
+        if: steps.go.outputs.present == 'true'
+        run: go test -race ./...
+      - name: i18n catalog check
+        if: steps.go.outputs.present == 'true'
+        run: |
+          if [ -d tools/i18ncheck ]; then
+            go run ./tools/i18ncheck
+          else
+            echo "No tools/i18ncheck yet. Skipping."
+          fi
+      - name: govulncheck
+        if: steps.go.outputs.present == 'true'
+        run: |
+          # TODO: pin a govulncheck version once go.mod exists.
+          go run golang.org/x/vuln/cmd/govulncheck@latest ./...

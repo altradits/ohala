@@ -1,0 +1,49 @@
+name: itest
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "23 3 * * *"
+
+permissions:
+  contents: read
+
+env:
+  # TODO: the maintainer pins these before the first integration test lands.
+  BITCOIND_VERSION: ""
+  LND_VERSION: ""
+
+jobs:
+  itest:
+    if: "github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'area: lnd')"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Look for integration tests
+        id: itest
+        run: |
+          if [ ! -d itest ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "No itest dir yet. Skipping."
+          elif [ -z "${{ env.BITCOIND_VERSION }}" ] || [ -z "${{ env.LND_VERSION }}" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "itest versions are not pinned yet. Skipping."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Set up Go
+        if: steps.itest.outputs.ready == 'true'
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+      - name: Start regtest nodes
+        if: steps.itest.outputs.ready == 'true'
+        run: |
+          echo "TODO: install bitcoind $BITCOIND_VERSION and lnd $LND_VERSION with checksum checks, start regtest with two nodes and a channel."
+          exit 1
+      - name: Run integration tests
+        if: steps.itest.outputs.ready == 'true'
+        run: go test -tags itest ./itest/...

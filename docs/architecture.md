@@ -32,7 +32,7 @@ github.com/altradits/ohala
   web/templates/, web/static/  embedded with go:embed (one CSS file, one JS file, no CDN)
   locales/en.json, sw.json ..  one flat JSON catalog per locale (BCP 47 tag)
   tools/i18ncheck/             CI tool: keys, placeholders, plural forms
-  tools/aitrailers/            CI helper used by the review-routing workflow
+  tools/                       CI helpers
   itest/                       integration tests (build tag itest) against regtest lnd
   dev/                         regtest scripts, Polar how-to, sample ohala.conf
   docs/                        install, lnd setup, macaroon, translating, architecture, ADRs

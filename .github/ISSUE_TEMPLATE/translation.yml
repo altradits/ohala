@@ -1,0 +1,34 @@
+name: Translation
+description: Add or update a language catalog
+labels: ["translation"]
+body:
+  - type: input
+    id: language
+    attributes:
+      label: Language
+      description: Language name in English and in itself, e.g. Kiswahili (Kiswahili).
+    validations:
+      required: true
+  - type: input
+    id: tag
+    attributes:
+      label: BCP 47 tag
+      description: The catalog file name without .json, e.g. sw.
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: New or update
+      options:
+        - New language
+        - Update to an existing catalog
+    validations:
+      required: true
+  - type: checkboxes
+    id: speaker
+    attributes:
+      label: Speaker check
+      options:
+        - label: I am a speaker of this language, and this translation is my own work.
+          required: true

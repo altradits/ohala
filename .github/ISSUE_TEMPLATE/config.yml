@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/altradits/ohala/security/advisories/new
+    about: Do not open public issues for vulnerabilities. Report them privately here.

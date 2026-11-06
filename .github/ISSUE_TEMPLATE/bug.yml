@@ -1,0 +1,58 @@
+name: Bug report
+description: Something does not work as documented
+labels: ["bug", "needs-triage"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Ohala version
+      description: Output of `ohala version`, or the commit you built from.
+    validations:
+      required: true
+  - type: input
+    id: lnd-version
+    attributes:
+      label: LND version
+      description: Output of `lncli getinfo | grep version`, if your report touches LND.
+    validations:
+      required: false
+  - type: dropdown
+    id: network
+    attributes:
+      label: Network
+      options:
+        - regtest
+        - signet
+        - testnet
+        - mainnet
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps
+      description: What did you do, step by step?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+      description: What should have happened?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual
+      description: What happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Paste the relevant logs. Remove macaroons, preimages, PINs and session tokens first.
+      render: text
+    validations:
+      required: false
